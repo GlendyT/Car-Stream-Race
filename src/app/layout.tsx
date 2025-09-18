@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+import { TeamsProvider } from "@/context/TeamsProvider";
 
 export const metadata: Metadata = {
   title: "Car Streams",
@@ -13,11 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={` antialiased`}
-      >
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning className={` antialiased`}>
+        <TeamsProvider>{children}</TeamsProvider>
       </body>
     </html>
   );
