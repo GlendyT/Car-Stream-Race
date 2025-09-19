@@ -1,51 +1,29 @@
-import React, { useEffect, useRef, useState } from "react";
-//import styles from "./cars.module.css";
-import { gsap } from "gsap";
+"use client";
+
+import { RaceContextType, RaceProviderProps } from "@/types";
+import { anchors1, anchors2 } from "@/utils/helpers";
+import gsap from "gsap";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
+import { createContext, useEffect, useRef, useState } from "react";
 
-const anchors1 = [
-  { x: 100, y: 650 },
-  { x: 160, y: 550 },
-  { x: 120, y: 450 },
-  { x: 180, y: 350 },
-  { x: 140, y: 250 },
-  { x: 170, y: 150 },
-  { x: 150, y: 50 },
-];
-const anchors2 = [
-  { x: 10, y: 650 },
-  { x: 10, y: 550 },
-  { x: 80, y: 450 },
-  { x: 20, y: 350 },
-  { x: 60, y: 250 },
-  { x: 30, y: 150 },
-  { x: 50, y: 50 },
-];
+const RaceContext = createContext<RaceContextType>(null!);
 
-interface CarsProps {
-  progress1: number; // valor entre 0 y 1
-  progress2: number; // valor entre 0 y 1
-  color1?: string;
-  color2?: string;
-  car1?: string;
-  car2?: string;
-}
-
-const Cars: React.FC<CarsProps> = ({
-  progress1,
-  progress2,
+const RaceProvider = ({
+  children,
+  progress1 = 0,
+  progress2 = 0,
   color1 = "hsl(44deg 100% 50%)",
   color2 = "hsl(44deg 100% 50%)",
   car1,
   car2,
-}) => {
+}: RaceProviderProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const path1Ref = useRef<SVGPathElement>(null);
   const path2Ref = useRef<SVGPathElement>(null);
-  const car1ImageRef = useRef<SVGImageElement>(null);
+  const car1ImageRef = useRef<HTMLDivElement>(null);
   const car1CircleRef = useRef<SVGCircleElement>(null);
-  const car2ImageRef = useRef<SVGImageElement>(null);
+  const car2ImageRef = useRef<HTMLDivElement>(null);
   const car2CircleRef = useRef<SVGCircleElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   // Guardar el progreso anterior de cada auto
@@ -210,70 +188,22 @@ const Cars: React.FC<CarsProps> = ({
       },
     });
   }, [progress2, isInitialized, car2]);
-
   return (
-    <>
-      <svg
-        id="svg"
-        ref={svgRef}
-        viewBox="0 0 200 700"
-        className={`overflow-visible h-full w-full border-dotted   `}
-      >
-        <defs>
-          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-            <feOffset dx="1" dy="4" result="offset"/>
-            <feFlood floodColor="#b29201" floodOpacity="1"/>
-            <feComposite in2="offset" operator="in"/>
-            <feMerge>
-              <feMergeNode/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <path
-          id="path1"
-          ref={path1Ref}
-          stroke={color1}
-          strokeWidth={4}
-          fill="none"
-        />
-        <path
-          id="path2"
-          ref={path2Ref}
-          stroke={color2}
-          strokeWidth={4}
-          fill="none"
-        />
-        {/* Carro 1 */}
-        {car1 ? (
-          <image
-            ref={car1ImageRef}
-            href={car1}
-            width={100}
-            height={200}
-            x={-10}
-            y={-10}
-          />
-        ) : (
-          <circle ref={car1CircleRef} r={10} fill={color1} />
-        )}
-        {/* Carro 2 */}
-        {car2 ? (
-          <image
-            ref={car2ImageRef}
-            href={car2}
-            width={100}
-            height={200}
-            x={-10}
-            y={-10}
-          />
-        ) : (
-          <circle ref={car2CircleRef} r={10} fill={color2} />
-        )}
-      </svg>
-    </>
+    <RaceContext.Provider
+      value={{
+        svgRef,
+        path1Ref,
+        path2Ref,
+        car1ImageRef,
+        car1CircleRef,
+        car2ImageRef,
+        car2CircleRef,
+      }}
+    >
+      {children}
+    </RaceContext.Provider>
   );
 };
 
-export default Cars;
+export { RaceProvider };
+export default RaceContext;

@@ -6,6 +6,7 @@ import React, {
   FormEvent,
   useEffect,
   startTransition,
+  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -15,6 +16,8 @@ import {
   ProgressHistory,
 } from "../types/index";
 import { teams } from "@/utils/teams";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 
 const TeamsContext = createContext<TeamsContextType>(null!);
 
@@ -28,7 +31,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     progress: 0,
     totalProgress: 0,
     progressHistory: [],
-    car:""
+    car: "",
   });
   const [team2, setTeam2] = useState<DetailTeam>({
     name: "",
@@ -37,7 +40,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     progress: 0,
     totalProgress: 0,
     progressHistory: [],
-    car:""
+    car: "",
   });
   const [matchResult, setMatchResult] = useState<{
     team1: DetailTeam;
@@ -47,6 +50,8 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
   const [team2Error, setTeam2Error] = useState<string>("");
   const [team1AnimatedProgress, setTeam1AnimatedProgress] = useState<number>(0);
   const [team2AnimatedProgress, setTeam2AnimatedProgress] = useState<number>(0);
+  const [editingEntry1, setEditingEntry1] = useState<string | null>(null);
+  const [editingEntry2, setEditingEntry2] = useState<string | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -77,7 +82,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       setMatchResult({ team1, team2 });
       const matchUrl = `${team1.name.toLowerCase()}vs${team2.name.toLowerCase()}`;
       startTransition(() => {
-        router.push(`/partido/${matchUrl}`);
+        router.push(`/match/${matchUrl}`);
       });
     }
   };
@@ -94,7 +99,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
           progress: 0,
           totalProgress: 0,
           progressHistory: [],
-          car:"",
+          car: "",
         });
       }
       setTeam1({
@@ -104,7 +109,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         progress: team1.progress,
         totalProgress: team1.totalProgress,
         progressHistory: team1.progressHistory,
-        car:selectedTeamData.car,
+        car: selectedTeamData.car,
       });
     }
   };
@@ -121,7 +126,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
           progress: 0,
           totalProgress: 0,
           progressHistory: [],
-          car:"",
+          car: "",
         });
       }
       setTeam2({
@@ -131,7 +136,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         progress: team2.progress,
         totalProgress: team2.totalProgress,
         progressHistory: team2.progressHistory,
-        car:selectedTeamData.car,
+        car: selectedTeamData.car,
       });
     }
   };
@@ -151,7 +156,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     const remaining = team1.goal - team1.totalProgress;
 
     if (progressValue > remaining) {
-      setTeam1Error(`No puedes agregar más de ${remaining}.`);
+      setTeam1Error(`You can't add more than ${remaining}.`);
     } else {
       setTeam1Error("");
     }
@@ -180,6 +185,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       return;
 
     const newHistoryEntry: ProgressHistory = {
+      id: Date.now().toString(),
       value: team1.progress,
       timestamp: new Date().toLocaleString("es-ES"),
     };
@@ -217,6 +223,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       return;
 
     const newHistoryEntry: ProgressHistory = {
+      id: Date.now().toString(),
       value: team2.progress,
       timestamp: new Date().toLocaleString("es-ES"),
     };
@@ -248,6 +255,108 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     animateProgress();
   };
 
+  const handleStartEdit1 = (id: string) => {
+    const entry = team1.progressHistory.find((e) => e.id === id);
+    if (!entry) return;
+
+    setEditingEntry1(id);
+    setTeam1((prev) => ({ ...prev, progress: entry.value }));
+  };
+
+  const handleSaveEdit1 = () => {
+    if (!editingEntry1) return;
+
+    const entry = team1.progressHistory.find((e) => e.id === editingEntry1);
+    if (!entry) return;
+
+    const oldValue = entry.value;
+    const newValue = team1.progress;
+    const newTotalProgress = team1.totalProgress - oldValue + newValue;
+
+    if (newTotalProgress > team1.goal || newValue <= 0) return;
+
+    const startProgress = team1AnimatedProgress;
+    const endProgress = newTotalProgress;
+    const increment = (endProgress - startProgress) / 20;
+
+    let currentStep = 0;
+    const animateProgress = () => {
+      if (currentStep <= 20) {
+        const animatedValue = startProgress + increment * currentStep;
+        setTeam1AnimatedProgress(animatedValue);
+        currentStep++;
+        setTimeout(animateProgress, 50);
+      }
+    };
+
+    setTeam1((prev) => ({
+      ...prev,
+      progress: 0,
+      totalProgress: newTotalProgress,
+      progressHistory: prev.progressHistory.map((e) =>
+        e.id === editingEntry1 ? { ...e, value: newValue } : e
+      ),
+    }));
+    setEditingEntry1(null);
+    animateProgress();
+  };
+
+  const handleCancelEdit1 = () => {
+    setEditingEntry1(null);
+    setTeam1((prev) => ({ ...prev, progress: 0 }));
+  };
+
+  const handleStartEdit2 = (id: string) => {
+    const entry = team2.progressHistory.find((e) => e.id === id);
+    if (!entry) return;
+
+    setEditingEntry2(id);
+    setTeam2((prev) => ({ ...prev, progress: entry.value }));
+  };
+
+  const handleSaveEdit2 = () => {
+    if (!editingEntry2) return;
+
+    const entry = team2.progressHistory.find((e) => e.id === editingEntry2);
+    if (!entry) return;
+
+    const oldValue = entry.value;
+    const newValue = team2.progress;
+    const newTotalProgress = team2.totalProgress - oldValue + newValue;
+
+    if (newTotalProgress > team2.goal || newValue <= 0) return;
+
+    const startProgress = team2AnimatedProgress;
+    const endProgress = newTotalProgress;
+    const increment = (endProgress - startProgress) / 20;
+
+    let currentStep = 0;
+    const animateProgress = () => {
+      if (currentStep <= 20) {
+        const animatedValue = startProgress + increment * currentStep;
+        setTeam2AnimatedProgress(animatedValue);
+        currentStep++;
+        setTimeout(animateProgress, 50);
+      }
+    };
+
+    setTeam2((prev) => ({
+      ...prev,
+      progress: 0,
+      totalProgress: newTotalProgress,
+      progressHistory: prev.progressHistory.map((e) =>
+        e.id === editingEntry2 ? { ...e, value: newValue } : e
+      ),
+    }));
+    setEditingEntry2(null);
+    animateProgress();
+  };
+
+  const handleCancelEdit2 = () => {
+    setEditingEntry2(null);
+    setTeam2((prev) => ({ ...prev, progress: 0 }));
+  };
+
   const handleReset = () => {
     const initialTeam = {
       name: "",
@@ -256,7 +365,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       progress: 0,
       totalProgress: 0,
       progressHistory: [],
-      car:"",
+      car: "",
     };
     setTeam1(initialTeam);
     setTeam2(initialTeam);
@@ -264,6 +373,41 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     localStorage.removeItem("carstreams-data");
     router.back();
   };
+
+  const [loading, setLoading] = useState(false);
+  const loaderRef = useRef(null);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    const hasVisited = localStorage.getItem("hasVisited");
+    if (!hasVisited) {
+      setLoading(true);
+      localStorage.setItem("hasVisited", "true");
+    }
+  }, []);
+
+  useGSAP(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        gsap.to(loaderRef.current, {
+          opacity: 0,
+          duration: 0.5,
+          onComplete: () => setLoading(false),
+        });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  useGSAP(() => {
+    if (!loading && contentRef.current) {
+      gsap.fromTo(
+        contentRef.current,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.8 }
+      );
+    }
+  }, [loading]);
 
   return (
     <TeamsContext.Provider
@@ -281,6 +425,14 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         handleProgress2Change,
         handleSaveProgress1,
         handleSaveProgress2,
+        handleStartEdit1,
+        handleSaveEdit1,
+        handleCancelEdit1,
+        handleStartEdit2,
+        handleSaveEdit2,
+        handleCancelEdit2,
+        editingEntry1,
+        editingEntry2,
         handleReset,
         matchResult,
         setMatchResult,
@@ -288,6 +440,9 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         team2Error,
         team1AnimatedProgress,
         team2AnimatedProgress,
+        loading,
+        contentRef,
+        loaderRef,
       }}
     >
       {children}

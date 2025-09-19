@@ -1,21 +1,24 @@
 import React from "react";
 
 type BottonUtilProps = {
-  label: string;
+  label?: string;
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
+  icon?: React.ReactNode;
+  title?: string;
 };
 
-const ButtonUtil = ({ label, onClick, className }: BottonUtilProps) => {
+const ButtonUtil = ({ label, onClick, className, icon, title }: BottonUtilProps) => {
   return (
-    <div className="flex w-full flex-col gap-4 ">
+    <div className="flex w-auto flex-col  ">
       <button
         type="submit"
-        className={`flex py-2 flex-col items-center justify-center bg-black text-white rounded-md hover:bg-gray-800 cursor-pointer text-xs ${className}`}
+        className={`flex py-2 flex-col items-center justify-center  rounded-md  cursor-pointer  ${className}`}
         onClick={onClick}
+        title={title || "Click"}
       >
-        {label}
+        {label} {icon}
       </button>
     </div>
   );

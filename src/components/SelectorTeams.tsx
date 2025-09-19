@@ -24,8 +24,9 @@ const SelectorTeams = ({
         value={value}
         onChange={handleChange}
         disabled={disabled}
-        className={` ${className} border-2  `}
+        className={` ${className} border-2 text-sm  `}
         data-testid="select"
+        title="Select an item from the list"
         required
       >
         <option value="" className="text-black">
@@ -35,7 +36,7 @@ const SelectorTeams = ({
           <option
             key={option.id}
             value={option.name}
-            className="text-black border "
+            className="text-black border text-xs "
           >
             {option.name}
           </option>

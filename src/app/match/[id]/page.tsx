@@ -5,7 +5,9 @@ import useTeams from "@/hooks/useTeams";
 import ButtonUtil from "@/components/ButtonUtil";
 import { montserrat } from "@/utils/helpers";
 import Cars from "../Cars";
-import { Carousel } from "flowbite-react";
+import Image from "next/image";
+import { RaceProvider } from "@/context/RaceProvider";
+import useDownload from "@/hooks/useDownload";
 
 const Partido = () => {
   const params = useParams();
@@ -21,6 +23,14 @@ const Partido = () => {
     handleProgress2Change,
     handleSaveProgress1,
     handleSaveProgress2,
+    handleStartEdit1,
+    handleSaveEdit1,
+    handleCancelEdit1,
+    handleStartEdit2,
+    handleSaveEdit2,
+    handleCancelEdit2,
+    editingEntry1,
+    editingEntry2,
     team1,
     team2,
     handleReset,
@@ -29,6 +39,7 @@ const Partido = () => {
     team1AnimatedProgress,
     team2AnimatedProgress,
   } = useTeams();
+  const { handleDownloadImage } = useDownload();
 
   // Validar que los datos estén disponibles
   if (
@@ -42,10 +53,13 @@ const Partido = () => {
 
   return (
     <section
-      className={`min-h-screen   flex flex-row max-lg:flex-col  gap-2 max-sm:pb-4 max-sm:gap-0 bg-gray-100 items-center justify-center  ${montserrat.className}`}
+      className={`min-h-screen    flex flex-row max-lg:flex-col w-full h-full bg-gray-100  gap-2 max-sm:pb-4 max-sm:gap-0 items-center justify-center  ${montserrat.className}`}
     >
-      <div className="w-full lg:h-[600px]  flex items-center justify-center bg-[url('/cars/1.carretera.webp')] bg-cover lg:bg-contain bg-center bg-no-repeat max-sm:h-[700px] ">
-        <Cars
+      <div
+        className=" w-[500px] max-sm:w-auto lg:h-[600px]  flex items-center justify-center bg-[url('/cars/1.carretera.webp')] bg-cover lg:bg-contain bg-center bg-no-repeat max-sm:h-[700px] "
+        id="print"
+      >
+        <RaceProvider
           progress1={
             team1?.goal > 0
               ? Math.min((team1AnimatedProgress || 0) / team1.goal, 1)
@@ -58,10 +72,32 @@ const Partido = () => {
           }
           car1={team1?.car}
           car2={team2?.car}
-        />
+        >
+          <Cars
+            progress1={
+              team1?.goal > 0
+                ? Math.min((team1AnimatedProgress || 0) / team1.goal, 1)
+                : 0
+            }
+            progress2={
+              team2?.goal > 0
+                ? Math.min((team2AnimatedProgress || 0) / team2.goal, 1)
+                : 0
+            }
+            car1={team1?.car}
+            car2={team2?.car}
+          />
+        </RaceProvider>
       </div>
 
       <div className="flex flex-col w-auto h-auto gap-1 items-center justify-center">
+        <Image
+          src="/cars/MonohobiLogo.webp"
+          alt="Monohobi Logo"
+          width={140}
+          height={140}
+          className="mb-0 max-sm:hidden"
+        />
         <h1 className="text-lg font-bold text-center">
           {displayTeam1} vs {displayTeam2}
         </h1>
@@ -86,6 +122,10 @@ const Partido = () => {
           }
           handleSaveProgress={handleSaveProgress1}
           teamHistory={team1.progressHistory}
+          handleStartEdit={handleStartEdit1}
+          handleSaveEdit={handleSaveEdit1}
+          handleCancelEdit={handleCancelEdit1}
+          isEditing={!!editingEntry1}
           errorMessage={team1Error}
         />
         <CardProgress
@@ -109,14 +149,26 @@ const Partido = () => {
           }
           handleSaveProgress={handleSaveProgress2}
           teamHistory={team2.progressHistory}
+          handleStartEdit={handleStartEdit2}
+          handleSaveEdit={handleSaveEdit2}
+          handleCancelEdit={handleCancelEdit2}
+          isEditing={!!editingEntry2}
           errorMessage={team2Error}
         />
-
-        <ButtonUtil
-          label="Reiniciar"
-          onClick={handleReset}
-          className="px-4 py-2 bg-red-900 text-white rounded-md hover:bg-red-800 "
-        />
+        <div className="flex flex-row gap-2 mt-2">
+          <ButtonUtil
+            label="Restart"
+            onClick={handleReset}
+            className="px-4 py-2 bg-red-900 text-white rounded-md hover:bg-red-800 "
+            title="Click to Reset the Match"
+          />
+          <ButtonUtil
+            label="Download Race"
+            onClick={handleDownloadImage}
+            className="w-auto bg-black hover:bg-gray-700 text-white px-2  flex items-center justify-center"
+            title="Click to Download an image of the Race"
+          />
+        </div>
       </div>
     </section>
   );
