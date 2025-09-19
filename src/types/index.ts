@@ -5,6 +5,7 @@ export type Team = {
   name: string;
   spelling: string;
   flag: string;
+  car: string
 
 };
 
@@ -61,6 +62,7 @@ export type DetailTeam = {
   totalProgress: number;
   progressHistory: ProgressHistory[];
   flag: string;
+  car: string;
 };
 
 export type InputGoalProps = {

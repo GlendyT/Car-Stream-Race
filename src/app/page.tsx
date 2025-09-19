@@ -19,7 +19,9 @@ const Index = () => {
   } = useTeams();
 
   return (
-    <section className={`min-h-screen bg-gray-100 p-4 flex flex-col items-center justify-center ${montserrat.className} `}>
+    <section
+      className={`min-h-screen bg-gray-100 p-4 flex flex-col items-center justify-center ${montserrat.className} `}
+    >
       <form onSubmit={handleSubmit} className="flex flex-col  gap-2">
         <div className="flex flex-wrap w-full items-center justify-center gap-5">
           {/* Equipo 1 */}
