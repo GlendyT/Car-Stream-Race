@@ -9,3 +9,5 @@ export const montserrat = Montserrat({
 export function formatNumberWithCommas(quantity: number) {
   return new Intl.NumberFormat("en-US").format(quantity);
 }
+
+

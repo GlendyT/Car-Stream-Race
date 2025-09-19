@@ -4,6 +4,8 @@ import CardProgress from "@/components/CardProgress";
 import useTeams from "@/hooks/useTeams";
 import ButtonUtil from "@/components/ButtonUtil";
 import { montserrat } from "@/utils/helpers";
+import Cars from "../Cars";
+import { Carousel } from "flowbite-react";
 
 const Partido = () => {
   const params = useParams();
@@ -28,15 +30,41 @@ const Partido = () => {
     team2AnimatedProgress,
   } = useTeams();
 
+  // Validar que los datos estén disponibles
+  if (
+    !team1 ||
+    !team2 ||
+    team1AnimatedProgress === undefined ||
+    team2AnimatedProgress === undefined
+  ) {
+    return <div>Cargando...</div>;
+  }
+
   return (
     <section
-      className={`min-h-screen p-4 flex flex-wrap bg-gray-100  ${montserrat.className}`}
+      className={`min-h-screen   flex flex-row max-lg:flex-col  gap-2 max-sm:pb-4 max-sm:gap-0 bg-gray-100 items-center justify-center  ${montserrat.className}`}
     >
-      <div className="flex flex-col w-auto gap-2  items-center justify-center">
-        <h1 className="text-2xl font-bold text-center">
+      <div className="w-full lg:h-[600px]  flex items-center justify-center bg-[url('/cars/1.carretera.webp')] bg-cover lg:bg-contain bg-center bg-no-repeat max-sm:h-[700px] ">
+        <Cars
+          progress1={
+            team1?.goal > 0
+              ? Math.min((team1AnimatedProgress || 0) / team1.goal, 1)
+              : 0
+          }
+          progress2={
+            team2?.goal > 0
+              ? Math.min((team2AnimatedProgress || 0) / team2.goal, 1)
+              : 0
+          }
+          car1={team1?.car}
+          car2={team2?.car}
+        />
+      </div>
+
+      <div className="flex flex-col w-auto h-auto gap-1 items-center justify-center">
+        <h1 className="text-lg font-bold text-center">
           {displayTeam1} vs {displayTeam2}
         </h1>
-
         <CardProgress
           teamImage={team1.flag}
           teamName={team1.name}
@@ -83,13 +111,13 @@ const Partido = () => {
           teamHistory={team2.progressHistory}
           errorMessage={team2Error}
         />
+
         <ButtonUtil
           label="Reiniciar"
           onClick={handleReset}
           className="px-4 py-2 bg-red-900 text-white rounded-md hover:bg-red-800 "
         />
       </div>
-      <div className="flex flex-col w-auto gap-2  items-center justify-center"></div>
     </section>
   );
 };

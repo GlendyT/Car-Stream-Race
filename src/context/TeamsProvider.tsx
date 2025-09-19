@@ -28,6 +28,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     progress: 0,
     totalProgress: 0,
     progressHistory: [],
+    car:""
   });
   const [team2, setTeam2] = useState<DetailTeam>({
     name: "",
@@ -36,6 +37,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     progress: 0,
     totalProgress: 0,
     progressHistory: [],
+    car:""
   });
   const [matchResult, setMatchResult] = useState<{
     team1: DetailTeam;
@@ -92,6 +94,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
           progress: 0,
           totalProgress: 0,
           progressHistory: [],
+          car:"",
         });
       }
       setTeam1({
@@ -101,6 +104,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         progress: team1.progress,
         totalProgress: team1.totalProgress,
         progressHistory: team1.progressHistory,
+        car:selectedTeamData.car,
       });
     }
   };
@@ -117,6 +121,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
           progress: 0,
           totalProgress: 0,
           progressHistory: [],
+          car:"",
         });
       }
       setTeam2({
@@ -126,6 +131,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         progress: team2.progress,
         totalProgress: team2.totalProgress,
         progressHistory: team2.progressHistory,
+        car:selectedTeamData.car,
       });
     }
   };
@@ -250,6 +256,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       progress: 0,
       totalProgress: 0,
       progressHistory: [],
+      car:"",
     };
     setTeam1(initialTeam);
     setTeam2(initialTeam);

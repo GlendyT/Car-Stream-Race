@@ -12,7 +12,7 @@ const ButtonUtil = ({ label, onClick, className }: BottonUtilProps) => {
     <div className="flex w-full flex-col gap-4 ">
       <button
         type="submit"
-        className={`flex py-2 flex-col items-center justify-center bg-black text-white rounded-md hover:bg-gray-800 cursor-pointer ${className}`}
+        className={`flex py-2 flex-col items-center justify-center bg-black text-white rounded-md hover:bg-gray-800 cursor-pointer text-xs ${className}`}
         onClick={onClick}
       >
         {label}
