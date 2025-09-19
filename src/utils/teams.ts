@@ -57,13 +57,13 @@ export const teams: Team[] = [
   //   flag: "https://flagcdn.com/in.svg",
   //   car: "cars/5.indonesia.webp",
   // },
-  {
-    id: 9,
-    name: "Thailand",
-    spelling: " 🇹🇭",
-    flag: "https://flagcdn.com/th.svg",
-    car: "/cars/11.thailand.webp",
-  },
+  // {
+  //   id: 9,
+  //   name: "Thailand",
+  //   spelling: " 🇹🇭",
+  //   flag: "https://flagcdn.com/th.svg",
+  //   car: "/cars/11.thailand.webp",
+  // },
   {
     id: 10,
     name: "Vietnam",

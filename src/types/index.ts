@@ -1,12 +1,11 @@
-import { FormEvent } from "react";
+import React, { FormEvent } from "react";
 
 export type Team = {
   id: number;
   name: string;
   spelling: string;
   flag: string;
-  car: string
-
+  car: string;
 };
 
 export type SelectorProps = {
@@ -38,12 +37,23 @@ export type TeamsContextType = {
   handleProgress2Change: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSaveProgress1: () => void;
   handleSaveProgress2: () => void;
+  handleStartEdit1: (id: string) => void;
+  handleSaveEdit1: () => void;
+  handleCancelEdit1: () => void;
+  handleStartEdit2: (id: string) => void;
+  handleSaveEdit2: () => void;
+  handleCancelEdit2: () => void;
+  editingEntry1: string | null;
+  editingEntry2: string | null;
   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
   handleReset: () => void;
   team1Error: string;
   team2Error: string;
   team1AnimatedProgress: number;
   team2AnimatedProgress: number;
+  loading: boolean;
+  contentRef: React.RefObject<HTMLDivElement | null>;
+  loaderRef: React.RefObject<HTMLDivElement | null>;
 };
 
 export type TeamsProviderProps = {
@@ -51,6 +61,7 @@ export type TeamsProviderProps = {
 };
 
 export type ProgressHistory = {
+  id: string;
   value: number;
   timestamp: string;
 };
@@ -85,6 +96,44 @@ export type CardProgressProps = {
   progressBar: number;
   completedStatus: number;
   handleSaveProgress: () => void;
-  teamHistory: { value: number; timestamp: string }[];
+  teamHistory: ProgressHistory[];
+  handleStartEdit: (id: string) => void;
+  handleSaveEdit: () => void;
+  handleCancelEdit: () => void;
+  isEditing: boolean;
   errorMessage?: string;
 };
+
+export type DownloadContextType = {
+  handleDownloadImage: () => Promise<void>;
+};
+
+export type RaceContextType = {
+  svgRef: React.RefObject<SVGSVGElement | null>;
+  path1Ref: React.RefObject<SVGPathElement | null>;
+  path2Ref: React.RefObject<SVGPathElement | null>;
+  car1ImageRef: React.RefObject<HTMLDivElement | null>;
+  car1CircleRef: React.RefObject<SVGCircleElement | null>;
+  car2ImageRef: React.RefObject<HTMLDivElement | null>;
+  car2CircleRef: React.RefObject<SVGCircleElement | null>;
+};
+
+export interface CarsProps {
+  progress1: number; // valor entre 0 y 1
+  progress2: number; // valor entre 0 y 1
+  color1?: string;
+  color2?: string;
+  car1?: string;
+  car2?: string;
+}
+
+
+export type RaceProviderProps ={
+    children: React.ReactNode;
+    progress1?: number;
+    progress2?: number;
+    color1?: string;
+    color2?: string;
+    car1?: string;
+    car2?: string;
+}

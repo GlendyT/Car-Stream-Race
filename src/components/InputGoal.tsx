@@ -10,8 +10,8 @@ const InputGoal = ({
 }: InputGoalProps) => {
   return (
     <div>
-      <label htmlFor="goal" className="block text-sm font-medium ">
-        Goals:
+      <label htmlFor="goal" className="block text-xs font-medium ">
+        Goal:
       </label>
       <input
         type={type}
@@ -20,8 +20,9 @@ const InputGoal = ({
         onChange={handleGoalChange}
         disabled={disabled}
         min="1"
-        className="p-2 rounded-md text-black border-2 w-full"
-        placeholder="Ingresa el número de goles"
+        className="p-2 rounded-md text-black text-sm border-2 w-full"
+        placeholder="Add goals"
+        title="Enter the Goal"
       />
     </div>
   );
