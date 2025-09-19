@@ -8,6 +8,8 @@ import Cars from "../Cars";
 import Image from "next/image";
 import { RaceProvider } from "@/context/RaceProvider";
 import useDownload from "@/hooks/useDownload";
+import Link from "next/link";
+import Logo from "@/components/Logo";
 
 const Partido = () => {
   const params = useParams();
@@ -169,6 +171,7 @@ const Partido = () => {
             title="Click to Download an image of the Race"
           />
         </div>
+        <Logo/>
       </div>
     </section>
   );
