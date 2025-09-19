@@ -1,11 +1,13 @@
 "use client";
 import ButtonUtil from "@/components/ButtonUtil";
 import InputGoal from "@/components/InputGoal";
+import Logo from "@/components/Logo";
 import SelectorTeams from "@/components/SelectorTeams";
 import useTeams from "@/hooks/useTeams";
 import { montserrat } from "@/utils/helpers";
 import { teams } from "@/utils/teams";
 import Image from "next/image";
+import Link from "next/link";
 
 const Index = () => {
   const {
@@ -127,6 +129,7 @@ const Index = () => {
           />
         </div>
       </form>
+      <Logo />
     </section>
   );
 };

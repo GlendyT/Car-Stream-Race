@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { TeamsProvider } from "@/context/TeamsProvider";
 import { DownloadProvider } from "@/context/DownloadProvider";
@@ -20,7 +21,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning className={` antialiased`}>
         <TeamsProvider>
-          <DownloadProvider>{children}</DownloadProvider>
+          <DownloadProvider>
+            {children}
+            <GoogleAnalytics gaId="G-RH5SPTZ6TY" />
+          </DownloadProvider>
         </TeamsProvider>
       </body>
     </html>
