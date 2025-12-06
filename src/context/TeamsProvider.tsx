@@ -5,10 +5,21 @@ import React, {
   useState,
   FormEvent,
   useEffect,
-  startTransition,
   useRef,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import {
+  createMatch,
+  getCurrentMatch,
+  updateMatch,
+  deleteMatch,
+  createHistory,
+  getHistoryByMatch,
+  deleteHistoryByMatch,
+  updateHistory,
+  client,
+  appwriteConfig,
+} from "../../lib/appwrite";
 import {
   DetailTeam,
   TeamsContextType,
@@ -18,30 +29,60 @@ import {
 import { teams } from "@/utils/teams";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { toast } from "react-toastify";
 
 const TeamsContext = createContext<TeamsContextType>(null!);
 
-const TeamsProvider = ({ children }: TeamsProviderProps) => {
-  const router = useRouter();
+// Constantes
+const INITIAL_TEAM: DetailTeam = {
+  name: "",
+  flag: "",
+  goal: 0,
+  progress: 0,
+  totalProgress: 0,
+  progressHistory: [],
+  car: "",
+};
 
-  const [team1, setTeam1] = useState<DetailTeam>({
-    name: "",
-    flag: "",
-    goal: 0,
-    progress: 0,
-    totalProgress: 0,
-    progressHistory: [],
-    car: "",
-  });
-  const [team2, setTeam2] = useState<DetailTeam>({
-    name: "",
-    flag: "",
-    goal: 0,
-    progress: 0,
-    totalProgress: 0,
-    progressHistory: [],
-    car: "",
-  });
+// Funciones auxiliares
+const convertHistoriesToProgressHistory = (histories: { $id: string; progress: number; date: string }[]): ProgressHistory[] => {
+  return histories.map(h => ({
+    id: h.$id,
+    value: h.progress,
+    timestamp: new Date(h.date).toLocaleString("es-ES"),
+  }));
+};
+
+const calculateTotalProgress = (histories: { progress: number }[]): number => {
+  return histories.reduce((sum, h) => sum + h.progress, 0);
+};
+
+const createProgressAnimation = (
+  startProgress: number,
+  endProgress: number,
+  setAnimatedProgress: (value: number) => void
+) => {
+  const increment = (endProgress - startProgress) / 20;
+  let currentStep = 0;
+
+  const animate = () => {
+    if (currentStep <= 20) {
+      const animatedValue = startProgress + increment * currentStep;
+      setAnimatedProgress(animatedValue);
+      currentStep++;
+      setTimeout(animate, 50);
+    }
+  };
+
+  return animate;
+};
+
+const TeamsProvider = ({ children }: TeamsProviderProps) => {
+  const pathname = usePathname();
+  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
+
+  const [team1, setTeam1] = useState<DetailTeam>(INITIAL_TEAM);
+  const [team2, setTeam2] = useState<DetailTeam>(INITIAL_TEAM);
   const [matchResult, setMatchResult] = useState<{
     team1: DetailTeam;
     team2: DetailTeam;
@@ -52,55 +93,147 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
   const [team2AnimatedProgress, setTeam2AnimatedProgress] = useState<number>(0);
   const [editingEntry1, setEditingEntry1] = useState<string | null>(null);
   const [editingEntry2, setEditingEntry2] = useState<string | null>(null);
+  const [ isAdmin, setIsAdmin ] = useState<boolean>(false);
 
-  // Load from localStorage on mount
+  // Detectar si está en la página admin
   useEffect(() => {
-    const savedData = localStorage.getItem("carstreams-data");
-    if (savedData) {
-      const {
-        team1: savedTeam1,
-        team2: savedTeam2,
-        matchResult: savedMatchResult,
-      } = JSON.parse(savedData);
-      setTeam1(savedTeam1);
-      setTeam2(savedTeam2);
-      setMatchResult(savedMatchResult);
-      setTeam1AnimatedProgress(savedTeam1.totalProgress);
-      setTeam2AnimatedProgress(savedTeam2.totalProgress);
+    setIsAdmin(pathname.includes('/admin'));
+  }, [pathname]);
+
+  // Función reutilizable para cargar datos del match
+  const loadMatchData = async () => {
+    try {
+      const match = await getCurrentMatch();
+      if (match) {
+        setCurrentMatchId(match.$id);
+        
+        const team1Data = teams.find(t => t.name === match.team1);
+        const team2Data = teams.find(t => t.name === match.team2);
+
+        const histories = await getHistoryByMatch(match.$id);
+        const team1Histories = histories.filter(h => h.team === 'team1');
+        const team2Histories = histories.filter(h => h.team === 'team2');
+
+        const team1TotalProgress = calculateTotalProgress(team1Histories);
+        const team2TotalProgress = calculateTotalProgress(team2Histories);
+
+        const team1ProgressHistory = convertHistoriesToProgressHistory(team1Histories);
+        const team2ProgressHistory = convertHistoriesToProgressHistory(team2Histories);
+
+        const loadedTeam1: DetailTeam = {
+          name: match.team1,
+          flag: team1Data?.flag || "",
+          car: team1Data?.car || "",
+          goal: match.goal1,
+          progress: 0,
+          totalProgress: team1TotalProgress,
+          progressHistory: team1ProgressHistory,
+        };
+
+        const loadedTeam2: DetailTeam = {
+          name: match.team2,
+          flag: team2Data?.flag || "",
+          car: team2Data?.car || "",
+          goal: match.goal2,
+          progress: 0,
+          totalProgress: team2TotalProgress,
+          progressHistory: team2ProgressHistory,
+        };
+
+        setTeam1(loadedTeam1);
+        setTeam2(loadedTeam2);
+        setMatchResult({ team1: loadedTeam1, team2: loadedTeam2 });
+        setTeam1AnimatedProgress(loadedTeam1.totalProgress);
+        setTeam2AnimatedProgress(loadedTeam2.totalProgress);
+      } else {
+        setTeam1(INITIAL_TEAM);
+        setTeam2(INITIAL_TEAM);
+        setMatchResult(null);
+        setTeam1AnimatedProgress(0);
+        setTeam2AnimatedProgress(0);
+        setCurrentMatchId(null);
+      }
+    } catch (error) {
+      console.error("Error loading match data:", error);
     }
+  };
+
+  // Load match from database on mount
+  useEffect(() => {
+    loadMatchData();
   }, []);
 
-  // Save to localStorage whenever data changes
+  // Appwrite Realtime - Suscribirse a cambios en las colecciones
   useEffect(() => {
-    const dataToSave = { team1, team2, matchResult };
-    localStorage.setItem("carstreams-data", JSON.stringify(dataToSave));
-  }, [team1, team2, matchResult]);
+    const unsubscribeMatch = client.subscribe(
+      `databases.${appwriteConfig.databaseId}.collections.${appwriteConfig.matchCollectionId}.documents`,
+      (response) => {
+        console.log("Match realtime event:", response);
+        loadMatchData();
+      }
+    );
+
+    const unsubscribeHistory = client.subscribe(
+      `databases.${appwriteConfig.databaseId}.collections.${appwriteConfig.historyCollectionId}.documents`,
+      (response) => {
+        console.log("History realtime event:", response);
+        loadMatchData();
+      }
+    );
+
+    return () => {
+      if (typeof unsubscribeMatch === 'function') {
+        unsubscribeMatch();
+      }
+      if (typeof unsubscribeHistory === 'function') {
+        unsubscribeHistory();
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (team1.name && team2.name) {
       setMatchResult({ team1, team2 });
-      const matchUrl = `${team1.name.toLowerCase()}vs${team2.name.toLowerCase()}`;
-      startTransition(() => {
-        router.push(`/match/${matchUrl}`);
-      });
     }
   };
+
+  const handleSaveMatch = async () => {
+    try {
+      if (!team1.name || !team2.name) {
+        toast.error("Both teams must be selected to save the match.");
+        return;
+      }
+
+      const matchData = {
+        team1: team1.name,
+        team2: team2.name,
+        goal1: team1.goal,
+        goal2: team2.goal,
+      };
+
+      if (currentMatchId) {
+        // Actualizar partido existente
+        await updateMatch(currentMatchId, matchData);
+      } else {
+        // Crear nuevo partido
+        const newMatch = await createMatch(matchData);
+        setCurrentMatchId(newMatch.$id);
+      }
+
+      toast.success("Match saved successfully.");
+    } catch (error) {
+      console.error("Error saving match:", error);
+      toast.error("Error saving match. Please try again.");
+    }
+  };
+
 
   const handleTeam1Change = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTeamData = teams.find((team) => team.name === e.target.value);
     if (selectedTeamData) {
-      // Si el equipo seleccionado es igual al equipo 2, resetear equipo 2
       if (selectedTeamData.name === team2.name) {
-        setTeam2({
-          name: "",
-          flag: "",
-          goal: 0,
-          progress: 0,
-          totalProgress: 0,
-          progressHistory: [],
-          car: "",
-        });
+        setTeam2(INITIAL_TEAM);
       }
       setTeam1({
         name: selectedTeamData.name,
@@ -117,17 +250,8 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
   const handleTeam2Change = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTeamData = teams.find((team) => team.name === e.target.value);
     if (selectedTeamData) {
-      // Si el equipo seleccionado es igual al equipo 1, resetear equipo 1
       if (selectedTeamData.name === team1.name) {
-        setTeam1({
-          name: "",
-          flag: "",
-          goal: 0,
-          progress: 0,
-          totalProgress: 0,
-          progressHistory: [],
-          car: "",
-        });
+        setTeam1(INITIAL_TEAM);
       }
       setTeam2({
         name: selectedTeamData.name,
@@ -179,9 +303,9 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     setTeam2((prev) => ({ ...prev, progress: progressValue }));
   };
 
-  const handleSaveProgress1 = () => {
+  const handleSaveProgress1 = async () => {
     const remaining = team1.goal - team1.totalProgress;
-    if (team1.progress > remaining || remaining === 0 || team1.progress === 0)
+    if (team1.progress > remaining || remaining === 0 || team1.progress === 0 || !currentMatchId)
       return;
 
     const newHistoryEntry: ProgressHistory = {
@@ -190,36 +314,35 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       timestamp: new Date().toLocaleString("es-ES"),
     };
 
-    const startProgress = team1.totalProgress;
-    const endProgress = team1.totalProgress + team1.progress;
-    const increment = team1.progress / 20; // 20 steps for animation
+    try {
+      await createHistory({
+        progress: team1.progress,
+        date: new Date().toISOString(),
+        matchId: currentMatchId,
+        team: 'team1',
+      });
 
-    let currentStep = 0;
-    const animateProgress = () => {
-      if (currentStep <= 20) {
-        const animatedValue = Math.min(
-          startProgress + increment * currentStep,
-          endProgress
-        );
-        setTeam1AnimatedProgress(animatedValue);
-        currentStep++;
-        setTimeout(animateProgress, 50); // 50ms per step
-      }
-    };
+      const startProgress = team1.totalProgress;
+      const endProgress = team1.totalProgress + team1.progress;
+      const animateProgress = createProgressAnimation(startProgress, endProgress, setTeam1AnimatedProgress);
 
-    setTeam1((prev) => ({
-      ...prev,
-      progress: 0,
-      totalProgress: prev.totalProgress + prev.progress,
-      progressHistory: [...prev.progressHistory, newHistoryEntry],
-    }));
-    setTeam1Error("");
-    animateProgress();
+      setTeam1((prev) => ({
+        ...prev,
+        progress: 0,
+        totalProgress: prev.totalProgress + prev.progress,
+        progressHistory: [...prev.progressHistory, newHistoryEntry],
+      }));
+      setTeam1Error("");
+      animateProgress();
+    } catch (error) {
+      console.error("Error saving progress:", error);
+      toast.error("Error saving progress. Please try again.");
+    }
   };
 
-  const handleSaveProgress2 = () => {
+  const handleSaveProgress2 = async () => {
     const remaining = team2.goal - team2.totalProgress;
-    if (team2.progress > remaining || remaining === 0 || team2.progress === 0)
+    if (team2.progress > remaining || remaining === 0 || team2.progress === 0 || !currentMatchId)
       return;
 
     const newHistoryEntry: ProgressHistory = {
@@ -228,31 +351,30 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
       timestamp: new Date().toLocaleString("es-ES"),
     };
 
-    const startProgress = team2.totalProgress;
-    const endProgress = team2.totalProgress + team2.progress;
-    const increment = team2.progress / 20; // 20 steps for animation
+    try {
+      await createHistory({
+        progress: team2.progress,
+        date: new Date().toISOString(),
+        matchId: currentMatchId,
+        team: 'team2',
+      });
 
-    let currentStep = 0;
-    const animateProgress = () => {
-      if (currentStep <= 20) {
-        const animatedValue = Math.min(
-          startProgress + increment * currentStep,
-          endProgress
-        );
-        setTeam2AnimatedProgress(animatedValue);
-        currentStep++;
-        setTimeout(animateProgress, 50); // 50ms per step
-      }
-    };
+      const startProgress = team2.totalProgress;
+      const endProgress = team2.totalProgress + team2.progress;
+      const animateProgress = createProgressAnimation(startProgress, endProgress, setTeam2AnimatedProgress);
 
-    setTeam2((prev) => ({
-      ...prev,
-      progress: 0,
-      totalProgress: prev.totalProgress + prev.progress,
-      progressHistory: [...prev.progressHistory, newHistoryEntry],
-    }));
-    setTeam2Error("");
-    animateProgress();
+      setTeam2((prev) => ({
+        ...prev,
+        progress: 0,
+        totalProgress: prev.totalProgress + prev.progress,
+        progressHistory: [...prev.progressHistory, newHistoryEntry],
+      }));
+      setTeam2Error("");
+      animateProgress();
+    } catch (error) {
+      console.error("Error saving progress:", error);
+      toast.error("Error saving progress. Please try again.");
+    }
   };
 
   const handleStartEdit1 = (id: string) => {
@@ -263,7 +385,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     setTeam1((prev) => ({ ...prev, progress: entry.value }));
   };
 
-  const handleSaveEdit1 = () => {
+  const handleSaveEdit1 = async () => {
     if (!editingEntry1) return;
 
     const entry = team1.progressHistory.find((e) => e.id === editingEntry1);
@@ -275,30 +397,28 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
 
     if (newTotalProgress > team1.goal || newValue <= 0) return;
 
-    const startProgress = team1AnimatedProgress;
-    const endProgress = newTotalProgress;
-    const increment = (endProgress - startProgress) / 20;
+    try {
+      await updateHistory(editingEntry1, {
+        progress: newValue,
+        date: new Date().toISOString(),
+      });
 
-    let currentStep = 0;
-    const animateProgress = () => {
-      if (currentStep <= 20) {
-        const animatedValue = startProgress + increment * currentStep;
-        setTeam1AnimatedProgress(animatedValue);
-        currentStep++;
-        setTimeout(animateProgress, 50);
-      }
-    };
+      const animateProgress = createProgressAnimation(team1AnimatedProgress, newTotalProgress, setTeam1AnimatedProgress);
 
-    setTeam1((prev) => ({
-      ...prev,
-      progress: 0,
-      totalProgress: newTotalProgress,
-      progressHistory: prev.progressHistory.map((e) =>
-        e.id === editingEntry1 ? { ...e, value: newValue } : e
-      ),
-    }));
-    setEditingEntry1(null);
-    animateProgress();
+      setTeam1((prev) => ({
+        ...prev,
+        progress: 0,
+        totalProgress: newTotalProgress,
+        progressHistory: prev.progressHistory.map((e) =>
+          e.id === editingEntry1 ? { ...e, value: newValue, timestamp: new Date().toLocaleString("es-ES") } : e
+        ),
+      }));
+      setEditingEntry1(null);
+      animateProgress();
+    } catch (error) {
+      console.error("Error updating history:", error);
+      toast.error("Error updating progress. Please try again.");
+    }
   };
 
   const handleCancelEdit1 = () => {
@@ -314,7 +434,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     setTeam2((prev) => ({ ...prev, progress: entry.value }));
   };
 
-  const handleSaveEdit2 = () => {
+  const handleSaveEdit2 = async () => {
     if (!editingEntry2) return;
 
     const entry = team2.progressHistory.find((e) => e.id === editingEntry2);
@@ -326,30 +446,28 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
 
     if (newTotalProgress > team2.goal || newValue <= 0) return;
 
-    const startProgress = team2AnimatedProgress;
-    const endProgress = newTotalProgress;
-    const increment = (endProgress - startProgress) / 20;
+    try {
+      await updateHistory(editingEntry2, {
+        progress: newValue,
+        date: new Date().toISOString(),
+      });
 
-    let currentStep = 0;
-    const animateProgress = () => {
-      if (currentStep <= 20) {
-        const animatedValue = startProgress + increment * currentStep;
-        setTeam2AnimatedProgress(animatedValue);
-        currentStep++;
-        setTimeout(animateProgress, 50);
-      }
-    };
+      const animateProgress = createProgressAnimation(team2AnimatedProgress, newTotalProgress, setTeam2AnimatedProgress);
 
-    setTeam2((prev) => ({
-      ...prev,
-      progress: 0,
-      totalProgress: newTotalProgress,
-      progressHistory: prev.progressHistory.map((e) =>
-        e.id === editingEntry2 ? { ...e, value: newValue } : e
-      ),
-    }));
-    setEditingEntry2(null);
-    animateProgress();
+      setTeam2((prev) => ({
+        ...prev,
+        progress: 0,
+        totalProgress: newTotalProgress,
+        progressHistory: prev.progressHistory.map((e) =>
+          e.id === editingEntry2 ? { ...e, value: newValue, timestamp: new Date().toLocaleString("es-ES") } : e
+        ),
+      }));
+      setEditingEntry2(null);
+      animateProgress();
+    } catch (error) {
+      console.error("Error updating history:", error);
+      toast.error("Error updating progress. Please try again.");
+    }
   };
 
   const handleCancelEdit2 = () => {
@@ -357,21 +475,23 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
     setTeam2((prev) => ({ ...prev, progress: 0 }));
   };
 
-  const handleReset = () => {
-    const initialTeam = {
-      name: "",
-      flag: "",
-      goal: 0,
-      progress: 0,
-      totalProgress: 0,
-      progressHistory: [],
-      car: "",
-    };
-    setTeam1(initialTeam);
-    setTeam2(initialTeam);
-    setMatchResult(null);
-    localStorage.removeItem("carstreams-data");
-    router.back();
+  const handleReset = async () => {
+    try {
+      if (currentMatchId) {
+        await deleteHistoryByMatch(currentMatchId);
+        await deleteMatch(currentMatchId);
+        setCurrentMatchId(null);
+      }
+
+      setTeam1(INITIAL_TEAM);
+      setTeam2(INITIAL_TEAM);
+      setMatchResult(null);
+      setTeam1AnimatedProgress(0);
+      setTeam2AnimatedProgress(0);
+    } catch (error) {
+      console.error("Error resetting match:", error);
+      toast.error("Error resetting match. Please try again.");
+    }
   };
 
   const [loading, setLoading] = useState(false);
@@ -417,6 +537,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         team2,
         setTeam2,
         handleSubmit,
+        handleSaveMatch,
         handleTeam1Change,
         handleTeam2Change,
         handleGoal1Change,
@@ -443,6 +564,7 @@ const TeamsProvider = ({ children }: TeamsProviderProps) => {
         loading,
         contentRef,
         loaderRef,
+        isAdmin, setIsAdmin
       }}
     >
       {children}

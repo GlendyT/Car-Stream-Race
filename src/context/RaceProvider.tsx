@@ -133,6 +133,30 @@ const RaceProvider = ({
         // Resetear progreso previo al montar
         prevProgress1.current = 0;
         prevProgress2.current = 0;
+
+        // Inicializar posición de los carritos grises en el inicio del path
+        if (car1ImageRef.current && path1Ref.current) {
+          gsap.set(car1ImageRef.current, {
+            motionPath: {
+              path: path1Ref.current,
+              align: path1Ref.current,
+              alignOrigin: [0.5, 0.5],
+              start: 0,
+              end: 0,
+            },
+          });
+        }
+        if (car2ImageRef.current && path2Ref.current) {
+          gsap.set(car2ImageRef.current, {
+            motionPath: {
+              path: path2Ref.current,
+              align: path2Ref.current,
+              alignOrigin: [0.5, 0.5],
+              start: 0,
+              end: 0,
+            },
+          });
+        }
       } catch (error) {
         console.error("Error initializing Cars component:", error);
       }

@@ -14,7 +14,7 @@ const ButtonUtil = ({ label, onClick, className, icon, title }: BottonUtilProps)
     <div className="flex w-auto flex-col  ">
       <button
         type="submit"
-        className={`flex py-2 flex-col items-center justify-center  rounded-md  cursor-pointer  ${className}`}
+        className={`flex py-2 flex-col items-center justify-center  rounded-md    ${className}`}
         onClick={onClick}
         title={title || "Click"}
       >

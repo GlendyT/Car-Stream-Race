@@ -3,6 +3,8 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { TeamsProvider } from "@/context/TeamsProvider";
 import { DownloadProvider } from "@/context/DownloadProvider";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
   title: "MONOHOBI",
@@ -24,6 +26,7 @@ export default function RootLayout({
           <DownloadProvider>
             {children}
             <GoogleAnalytics gaId="G-RH5SPTZ6TY" />
+            <ToastContainer/>
           </DownloadProvider>
         </TeamsProvider>
       </body>
