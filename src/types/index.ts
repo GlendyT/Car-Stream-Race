@@ -46,6 +46,7 @@ export type TeamsContextType = {
   editingEntry1: string | null;
   editingEntry2: string | null;
   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleSaveMatch: () => Promise<void>;
   handleReset: () => void;
   team1Error: string;
   team2Error: string;
@@ -54,6 +55,8 @@ export type TeamsContextType = {
   loading: boolean;
   contentRef: React.RefObject<HTMLDivElement | null>;
   loaderRef: React.RefObject<HTMLDivElement | null>;
+  isAdmin: boolean;
+  setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export type TeamsProviderProps = {
@@ -102,6 +105,7 @@ export type CardProgressProps = {
   handleCancelEdit: () => void;
   isEditing: boolean;
   errorMessage?: string;
+  isAdmin: boolean;
 };
 
 export type DownloadContextType = {

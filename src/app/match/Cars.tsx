@@ -3,7 +3,6 @@ import { CarsProps } from "@/types";
 import useRace from "@/hooks/useRace";
 
 const Cars = ({
-
   color1 = "hsl(44deg 100% 50%)",
   color2 = "hsl(44deg 100% 50%)",
   car1,
@@ -57,46 +56,44 @@ const Cars = ({
         {!car2 && <circle ref={car2CircleRef} r={10} fill={color2} />}
       </svg>
       {/* Carro 1 */}
-      {car1 && (
-        <div
-          ref={car1ImageRef}
-          className="absolute pointer-events-none "
-          style={{
-            width: "35px",
-            height: "50px",
-            transform: "translate(-10px, -10px)",
-          }}
-        >
-          <Image
-            src={car1}
-            alt="Car 1"
-            width={100}
-            height={20}
-            style={{ objectFit: "contain" }}
-          />
-        </div>
-      )}
-      {/* Carro 2 */}
-      {car2 && (
-        <div
-          ref={car2ImageRef}
-          className="absolute pointer-events-none"
-          style={{
-            width: "35px",
-            height: "50px",
-            transform: "translate(-10px, -10px)",
-          }}
-        >
-          <Image
-            src={car2}
-            alt="Car 2"
-            width={100}
-            height={10}
-            style={{ objectFit: "contain" }}
-          />
-        </div>
-      )}
 
+      <div
+        ref={car1ImageRef}
+        className="absolute pointer-events-none "
+        style={{
+          width: "35px",
+          height: "50px",
+          transform: "translate(-10px, -10px)",
+        }}
+      >
+        <Image
+          src={car1 || "/cars/none.webp"}
+          alt="Car 1"
+          width={100}
+          height={20}
+          style={{ objectFit: "contain" }}
+        />
+      </div>
+
+      {/* Carro 2 */}
+
+      <div
+        ref={car2ImageRef}
+        className="absolute pointer-events-none"
+        style={{
+          width: "35px",
+          height: "50px",
+          transform: "translate(-10px, -10px)",
+        }}
+      >
+        <Image
+          src={car2 || "/cars/none.webp"}
+          alt="Car 2"
+          width={100}
+          height={10}
+          style={{ objectFit: "contain" }}
+        />
+      </div>
     </div>
   );
 };

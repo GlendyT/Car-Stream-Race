@@ -6,12 +6,12 @@ const Logo = () => {
     <h1 className="text-xs">
       Dev{" "}
       <Link
-        href="https://ttechdesigners.com/"
+        href="https://github.com/GlendyT"
         target="_blank"
         rel="noopener noreferrer"
         className={` text-center font-extrabold  text-purple-900 transition-colors duration-300 `}
       >
-        TTechDesigners
+        Glendy T
       </Link>
     </h1>
   );

@@ -1,25 +1,15 @@
 "use client";
-import { useParams } from "next/navigation";
 import CardProgress from "@/components/CardProgress";
 import useTeams from "@/hooks/useTeams";
 import ButtonUtil from "@/components/ButtonUtil";
 import { montserrat } from "@/utils/helpers";
-import Cars from "../Cars";
+import Cars from "./Cars";
 import Image from "next/image";
 import { RaceProvider } from "@/context/RaceProvider";
 import useDownload from "@/hooks/useDownload";
-import Link from "next/link";
 import Logo from "@/components/Logo";
 
 const Partido = () => {
-  const params = useParams();
-  const matchId = params.id as string;
-  const [teamName1, teamName2] = matchId ? matchId.split("vs") : ["", ""];
-  const displayTeam1 =
-    teamName1?.charAt(0).toUpperCase() + teamName1?.slice(1) || "Equipo 1";
-  const displayTeam2 =
-    teamName2?.charAt(0).toUpperCase() + teamName2?.slice(1) || "Equipo 2";
-
   const {
     handleProgress1Change,
     handleProgress2Change,
@@ -35,11 +25,11 @@ const Partido = () => {
     editingEntry2,
     team1,
     team2,
-    handleReset,
     team1Error,
     team2Error,
     team1AnimatedProgress,
     team2AnimatedProgress,
+    isAdmin,
   } = useTeams();
   const { handleDownloadImage } = useDownload();
 
@@ -92,7 +82,7 @@ const Partido = () => {
         </RaceProvider>
       </div>
 
-      <div className="flex flex-col w-auto h-auto gap-1 items-center justify-center">
+      <div className="flex flex-col w-62 h-auto gap-1 items-center justify-center">
         <Image
           src="/cars/MonohobiLogo.webp"
           alt="Monohobi Logo"
@@ -101,7 +91,9 @@ const Partido = () => {
           className="mb-0 max-sm:hidden"
         />
         <h1 className="text-lg font-bold text-center">
-          {displayTeam1} vs {displayTeam2}
+          {!team1.name || !team2.name
+            ? "Admin has not started a race"
+            : `${team1.name} vs ${team2.name}`}
         </h1>
         <CardProgress
           teamImage={team1.flag}
@@ -129,6 +121,7 @@ const Partido = () => {
           handleCancelEdit={handleCancelEdit1}
           isEditing={!!editingEntry1}
           errorMessage={team1Error}
+          isAdmin={isAdmin}
         />
         <CardProgress
           teamImage={team2.flag}
@@ -156,22 +149,18 @@ const Partido = () => {
           handleCancelEdit={handleCancelEdit2}
           isEditing={!!editingEntry2}
           errorMessage={team2Error}
+          isAdmin={isAdmin}
         />
+
         <div className="flex flex-row gap-2 mt-2">
           <ButtonUtil
-            label="Restart"
-            onClick={handleReset}
-            className="px-4 py-2 bg-red-900 text-white rounded-md hover:bg-red-800 "
-            title="Click to Reset the Match"
-          />
-          <ButtonUtil
-            label="Download Race"
+            label="Share"
             onClick={handleDownloadImage}
             className="w-auto bg-black hover:bg-gray-700 text-white px-2  flex items-center justify-center"
             title="Click to Download an image of the Race"
           />
         </div>
-        <Logo/>
+        <Logo />
       </div>
     </section>
   );
